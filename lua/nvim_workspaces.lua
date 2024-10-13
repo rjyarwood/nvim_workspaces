@@ -1,5 +1,5 @@
 -- main module file
-local module = require("plugin_name.module")
+local module = require("nvim_workspaces.module")
 
 ---@class Config
 ---@field opt string Your config option
@@ -11,7 +11,7 @@ local config = {
 local M = {}
 
 ---@type Config
-M.config = config
+M.file_map = {}
 
 ---@param args Config?
 -- you can define your setup function here. Usually configurations can be merged, accepting outside params and
@@ -21,7 +21,22 @@ M.setup = function(args)
 end
 
 M.hello = function()
-  return module.my_first_function(M.config.opt)
+  found_config = 0
+  for dir in io.popen([[ls -pa ]] .. vim.fn.getcwd() .. [[| grep -v /]]):lines() do 
+    print(dir) 
+    M.file_map[dir] = vim.fn.getcwd() .. "/" .. dir
+    if(dir == "workspace.config") then
+      found_config = 1
+    end
+  end
+
+  if(found_config == 1) then
+    print("Found a config file")
+  else
+    print("Did not find a config file")
+  end
+
+
 end
 
 return M
