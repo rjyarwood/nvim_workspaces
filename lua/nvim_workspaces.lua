@@ -13,11 +13,25 @@ M.setup = function(args)
 end
 
 M.openFile = function (opts)
-   if(M.file_map[opts.args] == nil) then
-      print("Could not find '" .. opts.args .. "'")
+   name = string.gsub(opts.args, "%s+", "")
+   if(M.file_map[name] == nil) then
+      print("Could not find '" .. name .. "'")
       return
    end
-   vim.cmd('drop ' .. M.file_map[opts.args])
+   vim.cmd('drop ' .. M.file_map[name])
+end
+
+M.completeFileName = function(ArgLead, CmdLine, CursorPos) 
+
+   ret = {}
+   for key, val in pairs(M.file_map) do
+      if(string.sub(key,1,string.len(ArgLead))==ArgLead) then
+         table.insert(ret, key)
+      end
+   end
+
+   return ret
+
 end
 
 M.initProject = function()
