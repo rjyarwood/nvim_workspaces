@@ -39,16 +39,29 @@ M.initProject = function()
    M.file_map = {}
    local found_config = 0
 
+   excludedDirs=""
    for file in io.popen([[find ]] .. vim.fn.getcwd() .. [[ -type f]]):lines() do
-      M.file_map[vim.fs.basename(file)] = file
-      if(file == "workspace.config") then
-         found_config = 1
+      if(vim.fs.basename(file) == "workspace.config") then
+         local f = io.open(file, "r")
+         for line in io.lines(file) do
+            if(string.sub(line,1,string.len("excludedDirs"))=="excludedDirs") then
+               local dirs = string.match(line, "=(.*)")
+               for dir in string.gmatch(dirs, '([^,]+)') do
+                  excludedDirs = (excludedDirs .. [[ -not \( -path ]] .. vim.fn.getcwd() .. [[/]] ..dir .. [[ -prune \)]])
+               end
+               print(excludedDirs)
+            end
+         end
       end
    end
 
    if(found_config == 0) then
-      print("Did not find a config file")
-      return
+      --print("Did not find a config file")
+   end
+
+   local cmd = [[find ]] .. vim.fn.getcwd() .. excludedDirs
+   for file in io.popen(cmd):lines() do
+      M.file_map[vim.fs.basename(file)] = file
    end
 end
 
