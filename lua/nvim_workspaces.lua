@@ -39,7 +39,9 @@ M.initProject = function()
    M.file_map = {}
    local found_config = 0
 
-   excludedDirs=""
+   local excludedDirs=""
+   local extraDirs=""
+   local extensionList=""
    for file in io.popen([[find ]] .. vim.fn.getcwd() .. [[ -type f]]):lines() do
       if(vim.fs.basename(file) == "workspace.config") then
          local f = io.open(file, "r")
@@ -47,9 +49,24 @@ M.initProject = function()
             if(string.sub(line,1,string.len("excludedDirs"))=="excludedDirs") then
                local dirs = string.match(line, "=(.*)")
                for dir in string.gmatch(dirs, '([^,]+)') do
-                  excludedDirs = (excludedDirs .. [[ -not \( -path ]] .. vim.fn.getcwd() .. [[/]] ..dir .. [[ -prune \)]])
+                  excludedDirs = (excludedDirs .. [[ -not \( -name "]] ..dir .. [[" -type d -prune \)]])
                end
-               print(excludedDirs)
+            end
+
+            if(string.sub(line,1,string.len("extraDirs"))=="extraDirs") then
+               local dirs = string.match(line, "=(.*)")
+               for dir in string.gmatch(dirs, '([^,]+)') do
+                  extraDirs = (extraDirs .. [[ ]] .. dir)
+               end
+            end
+
+            if(string.sub(line,1,string.len("extensions"))=="extensions") then
+               local extensions = string.match(line, "=(.*)")
+               local _or_=""
+               for extension in string.gmatch(extensions, '([^,]+)') do
+                  extensionList = (extensionList .. [[ ]] .. _or_ .. [[ -name "*.]] .. extension .. [[" ]])
+                  _or_="-o"
+               end
             end
          end
       end
@@ -59,10 +76,11 @@ M.initProject = function()
       --print("Did not find a config file")
    end
 
-   local cmd = [[find ]] .. vim.fn.getcwd() .. excludedDirs
+   local cmd = [[find ]] .. vim.fn.getcwd() .. extraDirs .. excludedDirs .. [[ \( ]] .. extensionList ..  [[ \)  -type f ]]
    for file in io.popen(cmd):lines() do
       M.file_map[vim.fs.basename(file)] = file
    end
+   print(cmd)
 end
 
 return M
